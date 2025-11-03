@@ -1,0 +1,35 @@
+{
+  "test_interval": {
+    "hours": 1.0,
+    "min_interval": 0.25,
+    "max_daily_tests": 24
+  },
+  "retry_settings": {
+    "max_retries": 3,
+    "retry_delays": [
+      30,
+      120,
+      300
+    ],
+    "backoff_on_403": true,
+    "backoff_multiplier": 2.0
+  },
+  "speedtest_options": {
+    "timeout": 60,
+    "use_secure": true,
+    "use_single_connection": true,
+    "preferred_servers": [],
+    "exclude_servers": []
+  },
+  "rate_limiting": {
+    "adaptive_interval": true,
+    "error_threshold": 3,
+    "cooldown_hours": 2.0,
+    "reset_success_count": 5
+  },
+  "logging": {
+    "log_level": "INFO",
+    "detailed_errors": true,
+    "track_server_performance": true
+  }
+}

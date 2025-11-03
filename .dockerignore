@@ -1,0 +1,80 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+GIT_SAFETY.md
+
+# Documentation
+README.md
+*.md
+
+# Logs
+*.log
+logs/
+app/logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data files (will be mounted as volumes)
+data/
+*.csv
+*.json
+!app/config.json.template
+!app/speedtest_settings.json
+
+# Service files (not needed in container)
+app/*.service
+app/*.sh
+app/install_service.sh
+app/setup*.sh
+app/manage*.sh
+app/run*.sh
+app/service*.sh
+app/update_interval.sh
+
+# Docker files (don't copy into themselves)
+Dockerfile
+.dockerignore
+docker-compose*.yml

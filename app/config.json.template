@@ -1,0 +1,16 @@
+{
+  "admin": {
+    "username": "admin",
+    "password_hash": "CHANGE_THIS_PASSWORD_HASH"
+  },
+  "subscription_package": {
+    "name": "Your Internet Package",
+    "download": 100.0,
+    "upload": 10.0
+  },
+  "test_settings": {
+    "interval_hours": 1.0,
+    "manual_cooldown_minutes": 15,
+    "last_updated": null
+  }
+}

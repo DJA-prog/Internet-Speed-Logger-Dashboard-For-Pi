@@ -1,0 +1,56 @@
+# Docker Compose Override Example
+# Copy this file to docker-compose.override.yml and customize as needed
+
+version: '3.8'
+
+services:
+  internet-speed-logger:
+    # Custom environment variables
+    environment:
+      # Change admin credentials
+      - ADMIN_USERNAME=your_admin_user
+      - ADMIN_PASSWORD=your_secure_password
+      
+      # Adjust test settings
+      - TEST_INTERVAL_HOURS=0.5        # Test every 30 minutes
+      - MANUAL_COOLDOWN_MINUTES=10     # 10 minute cooldown for manual tests
+      
+      # Flask settings for development
+      # - FLASK_ENV=development
+      # - FLASK_DEBUG=true
+    
+    # Use different port
+    ports:
+      - "8080:5000"
+    
+    # Add resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    
+    # Mount additional volumes
+    # volumes:
+    #   - ./backups:/app/backups
+    
+    # Custom restart policy
+    restart: always
+    
+    # Add custom labels
+    labels:
+      - "app=internet-speed-logger"
+      - "version=1.0"
+      - "environment=production"
+
+  # Enable Nginx for production
+  nginx:
+    profiles:
+      - production
+    environment:
+      - NGINX_HOST=your-domain.com
+    # volumes:
+    #   - ./ssl:/etc/nginx/ssl:ro  # Mount SSL certificates
