@@ -249,6 +249,119 @@ Configure any interval from 6 minutes to 24 hours:
 }
 ```
 
+## ⚠️ Important: Rate Limiting & Blocking Prevention
+
+### Why Speedtest Gets Blocked
+
+Speedtest.net and other speed testing services implement rate limiting to prevent abuse and manage server load. **Common blocking triggers include:**
+
+- **🚫 Too frequent testing**: >50 tests per day from same IP
+- **🚫 Automated patterns**: Regular intervals detected as bot traffic  
+- **🚫 Server overload**: Popular servers reject requests during peak hours
+- **🚫 Geographic restrictions**: Some servers limit certain regions
+- **🚫 HTTP 403 Forbidden**: Most common blocking response
+
+### Optimal Testing Frequency
+
+| **Interval** | **Daily Tests** | **Status** | **Recommendation** |
+|--------------|-----------------|------------|-------------------|
+| 15 minutes   | 96 tests        | ❌ **High Risk** | Likely to be blocked |
+| 30 minutes   | 48 tests        | ⚠️ **Moderate Risk** | Current default, monitor for 403 errors |
+| 1 hour       | 24 tests        | ✅ **Recommended** | Optimal balance |
+| 2 hours      | 12 tests        | ✅ **Conservative** | Safest for long-term monitoring |
+| 6 hours      | 4 tests         | ✅ **Minimal** | Basic monitoring |
+
+### Enhanced Protection Features
+
+This application includes **advanced protection** against rate limiting:
+
+#### Smart Retry Logic
+```
+1st Failure → Wait 30 seconds → Retry
+2nd Failure → Wait 2 minutes → Retry  
+3rd Failure → Wait 5 minutes → Final attempt
+All Failed → Log error and wait for next interval
+```
+
+#### Optimized Speedtest Commands
+```bash
+# Enhanced command with protection
+speedtest-cli --json --secure --single --timeout 60
+
+# Options explained:
+--secure  # Uses HTTPS (more reliable)
+--single  # Single connection (reduces server load)
+--timeout # Prevents hanging connections
+```
+
+#### Error Detection & Recovery
+- **HTTP 403 Detection**: Automatic backoff on rate limit errors
+- **Progressive Delays**: Increasing wait times for repeated failures
+- **Service Health Monitoring**: Dashboard shows recent attempts and failures
+- **Adaptive Intervals**: Automatically increases interval after repeated blocks
+
+### Best Practices to Avoid Blocking
+
+#### ✅ Recommended Settings
+```bash
+# Change default interval from 30 minutes to 1 hour
+sudo systemctl stop internet-speed-logger.service
+# Edit service to use: python3 simple_speed_logger.py 1.0
+sudo systemctl start internet-speed-logger.service
+```
+
+#### ✅ Timing Strategies
+- **Best Times**: 2-6 AM local time (off-peak hours)
+- **Avoid**: 6-10 PM local time (peak usage)
+- **Spread Tests**: Don't run multiple manual tests rapidly
+
+#### ✅ Server Selection
+```bash
+# Use closest servers for better reliability
+speedtest-cli --list | head -5  # Show nearest servers
+speedtest-cli --server 4255     # Use specific server ID
+```
+
+### Monitoring Block Status
+
+The **Recent Test Attempts** section on the dashboard shows:
+- ✅ **Successful tests** with speed results
+- ❌ **Failed tests** with specific error messages  
+- ⚠️ **HTTP 403 errors** indicating rate limiting
+- 🔄 **Retry attempts** and backoff delays
+- 📊 **Service health status** (Running/Stopped)
+
+### Recovery from Blocking
+
+If you get blocked (HTTP 403 errors):
+
+1. **Wait**: Most blocks are temporary (1-24 hours)
+2. **Increase Interval**: Change to 2+ hour intervals
+3. **Check Dashboard**: Monitor "Recent Test Attempts" for patterns
+4. **Restart Service**: `sudo systemctl restart internet-speed-logger.service`
+5. **Change Servers**: Try different speedtest servers
+
+### Rate Limit Configuration
+
+Use the included configuration tool:
+```bash
+python3 speedtest_config.py  # Show current recommendations
+```
+
+**Example output:**
+```
+🚀 SPEEDTEST OPTIMIZATION RECOMMENDATIONS
+Current interval: 1.0 hours
+Daily tests: ~24.0
+
+✅ Current Settings:
+  • Testing every 1.0 hours (24.0 tests/day)
+  • Using secure HTTPS connections
+  • Single connection mode to reduce server load
+  • Automatic retry with progressive delays
+  • Adaptive interval on repeated failures
+```
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -285,6 +398,48 @@ python3 -m json.tool config.json
 # Reset to defaults
 cp config.json.template config.json
 ```
+
+#### Rate Limiting & HTTP 403 Errors
+
+**Symptoms**: Dashboard shows "Failed: HTTP Error 403 - Speedtest server blocked request"
+
+**Immediate Solutions**:
+```bash
+# 1. Check recent attempts on dashboard
+curl http://localhost:5000/api/recent-attempts | python3 -m json.tool
+
+# 2. Restart service to clear temporary blocks
+sudo systemctl restart internet-speed-logger.service
+
+# 3. Increase test interval to reduce frequency
+sudo systemctl stop internet-speed-logger.service
+# Edit service_runner.sh to change: python3 simple_speed_logger.py 2.0
+sudo systemctl start internet-speed-logger.service
+
+# 4. Check service logs for pattern
+sudo journalctl -u internet-speed-logger.service --since "6 hours ago" | grep -E "(403|Forbidden|Failed)"
+```
+
+**Long-term Prevention**:
+```bash
+# Monitor blocking status
+python3 speedtest_config.py  # Show recommendations
+
+# Use conservative settings
+echo "Changing to 2-hour intervals for stability..."
+sudo systemctl stop internet-speed-logger.service
+sed -i 's/python3 simple_speed_logger.py .*/python3 simple_speed_logger.py 2.0/' service_runner.sh
+sudo systemctl start internet-speed-logger.service
+
+# Verify new settings
+sudo journalctl -u internet-speed-logger.service -f
+```
+
+**Dashboard Monitoring**:
+- Check "Recent Test Attempts" section for failure patterns
+- Look for repeated 403 errors indicating blocking
+- Monitor "Service Status" badge (should show "Service Running")
+- Watch for retry attempts and their success/failure
 
 #### Permission Errors
 ```bash
@@ -543,3 +698,38 @@ sudo systemctl start internet-speed-logger.service
 - The script automatically selects the best server based on ping
 - Results are appended to the CSV file, so historical data is preserved
 - If errors occur during testing, they are logged and the script continues
+
+## 📋 Quick Reference: Blocking Prevention
+
+### Safe Testing Intervals
+```bash
+# Ultra-safe (recommended for production)
+python3 simple_speed_logger.py 2.0    # Every 2 hours (12 tests/day)
+
+# Balanced (default recommended)  
+python3 simple_speed_logger.py 1.0    # Every 1 hour (24 tests/day)
+
+# Current default (monitor for 403 errors)
+python3 simple_speed_logger.py 0.5    # Every 30 minutes (48 tests/day)
+```
+
+### Emergency Commands
+```bash
+# Check if blocked
+curl -s http://localhost:5000/api/recent-attempts | grep -i "403\|failed"
+
+# Restart services after blocking
+sudo systemctl restart internet-speed-logger.service
+
+# View real-time logs  
+sudo journalctl -u internet-speed-logger.service -f
+
+# Check dashboard for blocking status
+# Navigate to: http://localhost:5000 → "Recent Test Attempts" section
+```
+
+### Rate Limit Indicators
+- ❌ **HTTP 403 Forbidden** = Rate limited/blocked
+- ❌ **Cannot retrieve speedtest configuration** = Server overloaded
+- ✅ **Speed test completed** = Working normally
+- 🔄 **Retry attempts** = Automatic recovery in progress

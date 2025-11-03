@@ -142,6 +142,143 @@ def read_speed_data():
         logger.error(f"Error reading CSV file: {e}")
         return []
 
+def get_recent_test_attempts(limit=5):
+    """Get recent test attempts from systemd journal logs."""
+    import subprocess
+    import re
+    from datetime import datetime, timedelta
+    
+    try:
+        # Get recent logs from the internet-speed-logger service
+        since_time = (datetime.now() - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S')
+        
+        cmd = [
+            'journalctl', 
+            '-u', 'internet-speed-logger.service',
+            '--since', since_time,
+            '--no-pager',
+            '-o', 'short-iso'
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        
+        if result.returncode != 0:
+            logger.warning(f"Failed to get journal logs: {result.stderr}")
+            return []
+        
+        attempts = []
+        lines = result.stdout.strip().split('\n')
+        
+        for line in lines:
+            # Parse log entries for speed test attempts
+            if 'Starting speed test...' in line:
+                match = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})', line)
+                if match:
+                    timestamp = match.group(1)
+                    attempts.append({
+                        'timestamp': timestamp,
+                        'status': 'started',
+                        'message': 'Speed test started',
+                        'type': 'info'
+                    })
+            
+            elif 'Speed test completed:' in line:
+                match = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})', line)
+                if match:
+                    timestamp = match.group(1)
+                    # Extract speed info
+                    speed_match = re.search(r'(\d+\.?\d*) Mbps down, (\d+\.?\d*) Mbps up, (\d+\.?\d*) ms ping', line)
+                    if speed_match:
+                        message = f"Success: {speed_match.group(1)} Mbps down, {speed_match.group(2)} Mbps up, {speed_match.group(3)} ms ping"
+                    else:
+                        message = "Speed test completed successfully"
+                    
+                    attempts.append({
+                        'timestamp': timestamp,
+                        'status': 'success',
+                        'message': message,
+                        'type': 'success'
+                    })
+            
+            elif 'Speed test failed:' in line:
+                match = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})', line)
+                if match:
+                    timestamp = match.group(1)
+                    # Extract error message
+                    error_match = re.search(r'Speed test failed: (.+)', line)
+                    if error_match:
+                        message = f"Failed: {error_match.group(1)}"
+                    else:
+                        message = "Speed test failed"
+                    
+                    attempts.append({
+                        'timestamp': timestamp,
+                        'status': 'failed',
+                        'message': message,
+                        'type': 'error'
+                    })
+            
+            elif 'ERROR: HTTP Error 403: Forbidden' in line:
+                match = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})', line)
+                if match:
+                    timestamp = match.group(1)
+                    attempts.append({
+                        'timestamp': timestamp,
+                        'status': 'failed',
+                        'message': 'Failed: HTTP Error 403 - Speedtest server blocked request',
+                        'type': 'error'
+                    })
+            
+            elif 'Failed to write to CSV:' in line:
+                match = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})', line)
+                if match:
+                    timestamp = match.group(1)
+                    attempts.append({
+                        'timestamp': timestamp,
+                        'status': 'warning',
+                        'message': 'Warning: Failed to write results to CSV file',
+                        'type': 'warning'
+                    })
+        
+        # Sort by timestamp (newest first) and limit results
+        attempts.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Convert timestamps to more readable format
+        for attempt in attempts[:limit]:
+            try:
+                dt = datetime.fromisoformat(attempt['timestamp'].replace('Z', '+00:00'))
+                attempt['timestamp_readable'] = dt.strftime('%Y-%m-%d %H:%M:%S')
+                attempt['timestamp_relative'] = get_relative_time(dt)
+            except:
+                attempt['timestamp_readable'] = attempt['timestamp']
+                attempt['timestamp_relative'] = 'Unknown'
+        
+        return attempts[:limit]
+        
+    except Exception as e:
+        logger.error(f"Error getting recent test attempts: {e}")
+        return []
+
+def get_relative_time(dt):
+    """Get relative time string (e.g., '2 minutes ago')."""
+    try:
+        now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
+        diff = now - dt
+        
+        if diff.total_seconds() < 60:
+            return "Just now"
+        elif diff.total_seconds() < 3600:
+            minutes = int(diff.total_seconds() / 60)
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        elif diff.total_seconds() < 86400:
+            hours = int(diff.total_seconds() / 3600)
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        else:
+            days = diff.days
+            return f"{days} day{'s' if days != 1 else ''} ago"
+    except:
+        return "Unknown"
+
 def get_statistics(data):
     """Calculate statistics from speed data."""
     if not data:
@@ -677,6 +814,33 @@ def api_status():
     
     except Exception as e:
         logger.error(f"Error getting status: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/recent-attempts')
+def api_recent_attempts():
+    """API endpoint to get recent test attempts from service logs."""
+    try:
+        attempts = get_recent_test_attempts(limit=5)
+        
+        # Also check service status
+        import subprocess
+        try:
+            service_status = subprocess.run(
+                ['systemctl', 'is-active', 'internet-speed-logger.service'],
+                capture_output=True, text=True, timeout=5
+            )
+            is_running = service_status.stdout.strip() == 'active'
+        except:
+            is_running = False
+        
+        return jsonify({
+            'recent_attempts': attempts,
+            'service_running': is_running,
+            'last_updated': datetime.now().isoformat()
+        })
+    
+    except Exception as e:
+        logger.error(f"Error getting recent attempts: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

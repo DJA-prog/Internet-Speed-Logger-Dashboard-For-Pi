@@ -32,4 +32,4 @@ fi
 echo "Starting simple speed logger with 1 hour interval..."
 
 # Run the simple speed logger
-exec python3 simple_speed_logger.py 0.5
+exec python3 simple_speed_logger.py 1.0

@@ -211,6 +211,40 @@
             </div>
         </div>
 
+        <!-- Recent Test Attempts -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>
+                            <i class="fas fa-list-alt"></i> Recent Test Attempts
+                            <span id="serviceStatus" class="badge bg-success ms-2">Service Running</span>
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th width="25%">Time</th>
+                                        <th width="15%">Status</th>
+                                        <th width="60%">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentAttemptsTable">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">Loading recent attempts...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Shows the last 5 test attempts from service logs. Auto-refreshes every 30 seconds.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Status Info -->
         <div class="row mt-4">
             <div class="col-12">
@@ -404,8 +438,13 @@
                 const statsResponse = await fetch(`/api/data${params}`);
                 const statsData = await statsResponse.json();
                 
+                // Load recent attempts
+                const attemptsResponse = await fetch('/api/recent-attempts');
+                const attemptsData = await attemptsResponse.json();
+                
                 updateCharts(chartData);
                 updateStatsFromData(statsData);
+                updateRecentAttempts(attemptsData);
                 updateLastUpdate();
                 
             } catch (error) {
@@ -466,6 +505,81 @@
             
             distributionChart.data.datasets[0].data = [aboveTarget, nearTarget, belowTarget, poor];
             distributionChart.update();
+        }
+        
+        function updateRecentAttempts(data) {
+            const table = document.getElementById('recentAttemptsTable');
+            const serviceStatus = document.getElementById('serviceStatus');
+            
+            // Update service status badge
+            if (data.service_running) {
+                serviceStatus.textContent = 'Service Running';
+                serviceStatus.className = 'badge bg-success ms-2';
+            } else {
+                serviceStatus.textContent = 'Service Stopped';
+                serviceStatus.className = 'badge bg-danger ms-2';
+            }
+            
+            // Clear existing table content
+            table.innerHTML = '';
+            
+            if (!data.recent_attempts || data.recent_attempts.length === 0) {
+                table.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No recent attempts found</td></tr>';
+                return;
+            }
+            
+            // Populate table with recent attempts
+            data.recent_attempts.forEach(attempt => {
+                const row = document.createElement('tr');
+                
+                // Time column
+                const timeCell = document.createElement('td');
+                timeCell.innerHTML = `
+                    <div>${attempt.timestamp_readable}</div>
+                    <small class="text-muted">${attempt.timestamp_relative}</small>
+                `;
+                
+                // Status column
+                const statusCell = document.createElement('td');
+                let statusBadge = '';
+                switch(attempt.status) {
+                    case 'success':
+                        statusBadge = '<span class="badge bg-success">Success</span>';
+                        break;
+                    case 'failed':
+                        statusBadge = '<span class="badge bg-danger">Failed</span>';
+                        break;
+                    case 'started':
+                        statusBadge = '<span class="badge bg-info">Started</span>';
+                        break;
+                    case 'warning':
+                        statusBadge = '<span class="badge bg-warning">Warning</span>';
+                        break;
+                    default:
+                        statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+                }
+                statusCell.innerHTML = statusBadge;
+                
+                // Details column
+                const detailsCell = document.createElement('td');
+                detailsCell.textContent = attempt.message;
+                
+                // Add icon based on type
+                if (attempt.type === 'error') {
+                    detailsCell.innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>' + attempt.message;
+                } else if (attempt.type === 'success') {
+                    detailsCell.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>' + attempt.message;
+                } else if (attempt.type === 'warning') {
+                    detailsCell.innerHTML = '<i class="fas fa-exclamation-circle text-warning me-1"></i>' + attempt.message;
+                } else {
+                    detailsCell.innerHTML = '<i class="fas fa-info-circle text-info me-1"></i>' + attempt.message;
+                }
+                
+                row.appendChild(timeCell);
+                row.appendChild(statusCell);
+                row.appendChild(detailsCell);
+                table.appendChild(row);
+            });
         }
         
         async function runManualTest() {
