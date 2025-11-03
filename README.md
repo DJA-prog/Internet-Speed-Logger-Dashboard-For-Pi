@@ -1,6 +1,6 @@
-# Internet Speed Logger with Web Dashboard
+# Internet Speed Logger with Web Dashboard - Docker Edition
 
-A comprehensive Python application that automatically performs internet speed tests at regular intervals, logs results to CSV, and provides a beautiful web interface for viewing data with interactive charts.
+A comprehensive Docker-based Python application that automatically performs internet speed tests at regular intervals, logs results to CSV, and provides a beautiful web interface for viewing data with interactive charts.
 
 ## ✨ Features
 
@@ -18,70 +18,120 @@ A comprehensive Python application that automatically performs internet speed te
 - **Time Filtering**: View data for 24h, 7d, 30d, or all time
 - **Data Export**: Download CSV data with filtering options
 
-### System Integration
-- **Systemd Services**: Runs as background services with auto-start on boot
-- **Admin Panel**: Web-based configuration management
-- **Session Management**: Persistent admin authentication
-- **Service Management**: Automatic restart on configuration changes
+### Docker Integration
+- **Containerized Deployment**: One-command deployment with Docker Compose
+- **Data Persistence**: Volumes for CSV logs and configuration
+- **Production Ready**: Includes Nginx reverse proxy and SSL configuration
+- **Health Monitoring**: Built-in health checks and status monitoring
+- **Easy Management**: Comprehensive management scripts and utilities
 
 ### Performance Analytics
 - **Dynamic Distribution**: Speed distribution charts based on your subscription package
 - **Success Rate Tracking**: Monitor performance against ISP targets
 - **Historical Analysis**: Long-term trend analysis and statistics
 
-## 🚀 Quick Start
+## � Quick Start with Docker
 
 ### Prerequisites
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install speedtest-cli python3-flask python3-pandas python3-pip git
+- Docker 20.10+
+- Docker Compose 2.0+
+- Internet connection for speed tests
 
-# Fedora/RHEL
-sudo dnf install speedtest-cli python3-flask python3-pandas python3-pip git
+### Simple Deployment
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/DJA-prog/Internet-Speed-Logger-Dashboard-For-Pi.git
+   cd Internet-Speed-Logger-Dashboard-For-Pi
+   ```
+
+2. **Deploy with Docker Compose**
+   ```bash
+   # Quick deployment
+   ./manage.sh deploy
+   
+   # Or manually
+   docker-compose up -d
+   ```
+
+3. **Access the Application**
+   - 🌐 **Web Interface**: http://localhost:5000
+   - 🔐 **Default Admin**: `admin` / `speedtest123`
+   - 📊 **Health Check**: http://localhost:5000/health
+
+### Manual Docker Build
+
+```bash
+# Build the image
+docker build -t internet-speed-logger .
+
+# Run with data persistence
+docker run -d \
+  --name internet-speed-logger \
+  -p 5000:5000 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/logs:/app/logs \
+  internet-speed-logger
 ```
 
-### Installation
+## 📁 Data Persistence
 
-#### Option 1: Git Clone (Recommended)
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd internet_speed_logger
+The Docker application persists data in mounted volumes:
 
-# Copy configuration template
-cp config.json.template config.json
-
-# Edit configuration (see Configuration section below)
-nano config.json
-
-# Run setup
-./setup_web.sh
-
-# Start services
-./manage_all_services.sh
 ```
+./data/                     # Created automatically
+├── config.json            # Application configuration
+└── internet_speed_log.csv  # Speed test results
 
-#### Option 2: Complete Setup Script
-```bash
-# Install and start everything
-./setup_web.sh
-
-# Manage all services
-./manage_all_services.sh
+./logs/                     # Created automatically
+├── speed_test.log          # Application logs
+└── flask.log              # Web interface logs
 ```
 
 ## ⚙️ Configuration
 
-### Initial Setup
-1. Copy `config.json.template` to `config.json`
-2. Update the configuration:
+### Environment Variables
 
+The Docker application supports configuration via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ADMIN_USERNAME` | `admin` | Web interface admin username |
+| `ADMIN_PASSWORD` | `speedtest123` | Web interface admin password |
+| `TEST_INTERVAL_HOURS` | `1` | Hours between speed tests |
+| `MANUAL_COOLDOWN_MINUTES` | `15` | Cooldown between manual tests |
+| `FLASK_ENV` | `production` | Flask environment |
+
+### Docker Compose Override
+
+Create `docker-compose.override.yml` for custom settings:
+
+```yaml
+version: '3.8'
+services:
+  internet-speed-logger:
+    environment:
+      - ADMIN_USERNAME=your_admin
+      - ADMIN_PASSWORD=your_secure_password
+      - TEST_INTERVAL_HOURS=2.0
+    ports:
+      - "8080:5000"
+```
+
+### Initial Configuration Setup
+
+The Docker container automatically initializes configuration on first run. You can customize settings via:
+
+1. **Environment Variables** (recommended for Docker)
+2. **Web Admin Panel** (http://localhost:5000/admin)
+3. **Direct Config File** (edit `./data/config.json`)
+
+Example configuration:
 ```json
 {
   "admin": {
     "username": "admin",
-    "password_hash": "YOUR_SECURE_PASSWORD_HASH"
+    "password_hash": "hashed_password"
   },
   "subscription_package": {
     "name": "Your ISP Package Name",
@@ -95,34 +145,108 @@ nano config.json
   }
 }
 ```
+## 🔧 Docker Management
 
-### Password Setup
-Generate a secure password hash:
+### Container Commands
+
 ```bash
-python3 -c "
-import hashlib
-password = input('Enter admin password: ')
-print('Password hash:', hashlib.sha256(password.encode()).hexdigest())
-"
+# View logs
+docker-compose logs -f
+
+# Restart services
+docker-compose restart
+
+# Stop services
+docker-compose down
+
+# Update and restart
+docker-compose pull && docker-compose up -d
 ```
 
-### Git Safety
-This project includes a comprehensive `.gitignore` that excludes:
-- ✅ **Data files**: `*.csv`, `*.log` (your speed test results)
-- ✅ **Configuration**: `config.json` (contains passwords and settings)
-- ✅ **System files**: `*.service` (environment-specific)
-- ✅ **Virtual environments**: `venv/`, `env/`
-- ✅ **Python cache**: `__pycache__/`, `*.pyc`
-- ✅ **IDE files**: `.vscode/`, `.idea/`
+### Management Script
 
-#### Safe Files for Git
-- ✅ Source code (`.py` files)
-- ✅ Templates (`*.html`)
-- ✅ Configuration templates (`*.template`)
-- ✅ Documentation (`README.md`)
-- ✅ Setup scripts (`*.sh`)
-- ✅ Requirements files
-- ✅ Sample data (`sample_data.csv`)
+The included `manage.sh` script provides comprehensive management:
+
+```bash
+# Deploy the application
+./manage.sh deploy
+
+# Check status
+./manage.sh status
+
+# View logs
+./manage.sh logs
+
+# Create backup
+./manage.sh backup
+
+# Update application
+./manage.sh update
+
+# Stop application
+./manage.sh stop
+```
+
+### Service Modes
+
+The container supports different startup modes:
+
+```bash
+# Run both speed logger and web interface (default)
+docker run internet-speed-logger both
+
+# Run only speed logger
+docker run internet-speed-logger speed-logger
+
+# Run only web interface
+docker run internet-speed-logger web
+
+# Health check
+docker run internet-speed-logger health
+```
+
+### Production Deployment
+
+For production with Nginx reverse proxy:
+
+```bash
+# Start with Nginx proxy
+docker-compose --profile production up -d
+```
+
+Configure SSL by placing certificates in `./ssl/` and updating `nginx.conf`.
+
+## 🏥 Health Monitoring
+
+### Built-in Health Checks
+
+```bash
+# Check container health
+docker ps  # Shows HEALTHY/UNHEALTHY status
+
+# Manual health check
+curl http://localhost:5000/health
+
+# Container health check
+docker exec internet-speed-logger /docker-entrypoint.sh health
+```
+
+### Health Check Response
+
+The health endpoint returns detailed status:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-03T10:30:00",
+  "checks": {
+    "config": "ok",
+    "csv_writable": "ok", 
+    "data_access": "ok",
+    "total_records": 1250
+  }
+}
+```
 
 ## 🌐 Web Dashboard
 
@@ -161,18 +285,15 @@ Access the admin panel at: http://localhost:5000/admin
 - **Test Settings**: 
   - Configurable test intervals (0.1 to 24 hours)
   - Manual test cooldown settings (1-1440 minutes)
-  - Automatic service restart on configuration changes
+  - Real-time configuration updates
 - **Security Management**: 
   - Secure password changes
   - 24-hour persistent sessions
   - SHA256 password hashing
-- **Performance Analytics**: 
-  - Package compliance tracking
-  - Historical performance trends
 
 #### First-Time Admin Setup
 1. Access: http://localhost:5000/admin
-2. Login with default credentials (see configuration)
+2. Login with default credentials (`admin` / `speedtest123`)
 3. **Important**: Change the default password immediately
 4. Configure your ISP package details
 5. Set desired test intervals
@@ -195,58 +316,75 @@ timestamp,download_speed_mbps,upload_speed_mbps,ping_ms
 
 ## 🛠️ Advanced Usage
 
-### Service Management
+### Container Management
 ```bash
-# Check service status
-sudo systemctl status internet-speed-logger.service
-sudo systemctl status internet-speed-web.service
+# Enter container for debugging
+docker exec -it internet-speed-logger bash
 
-# Start/stop services
-sudo systemctl start internet-speed-logger.service
-sudo systemctl stop internet-speed-web.service
+# View real-time logs
+docker-compose logs -f internet-speed-logger
 
-# View logs
-sudo journalctl -u internet-speed-logger.service -f
-sudo journalctl -u internet-speed-web.service -f
+# Check container resource usage
+docker stats internet-speed-logger
 
-# Restart all services
-./manage_all_services.sh restart
+# Export data
+docker cp internet-speed-logger:/app/data/internet_speed_log.csv ./backup.csv
 ```
 
-### Manual Testing
+### Custom Docker Build
 ```bash
-# Run a single test
-python3 simple_speed_logger.py
+# Build with custom tags
+docker build -t my-speed-logger:v1.0 .
 
-# Run with custom interval (in hours)
-python3 simple_speed_logger.py 0.5  # Every 30 minutes
+# Run with custom environment
+docker run -d \
+  --name my-speed-logger \
+  -p 5000:5000 \
+  -e ADMIN_USERNAME=myuser \
+  -e ADMIN_PASSWORD=mypassword \
+  -e TEST_INTERVAL_HOURS=2 \
+  -v $(pwd)/data:/app/data \
+  my-speed-logger:v1.0
 ```
 
 ### Development Mode
 ```bash
-# Run web interface in development mode
-python3 web_interface.py
+# Run in development mode with live reload
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+# Or set environment variables
+export FLASK_ENV=development
+export FLASK_DEBUG=true
+docker-compose up
 ```
 
-## 🔧 Customization
+## 🔄 Updates and Backups
 
-### Adding New Features
-The modular design allows easy customization:
-- **`simple_speed_logger.py`**: Core testing logic
-- **`web_interface.py`**: Flask web application
-- **`templates/`**: HTML templates for web interface
-- **Configuration**: JSON-based settings management
+### Updating the Application
+```bash
+# Using management script
+./manage.sh update
 
-### Custom Intervals
-Configure any interval from 6 minutes to 24 hours:
-```json
-{
-  "test_settings": {
-    "interval_hours": 0.1,  // 6 minutes
-    "interval_hours": 2.5,  // 2.5 hours
-    "interval_hours": 24    // Daily
-  }
-}
+# Manual update
+git pull origin main
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+### Data Backup and Recovery
+```bash
+# Create backup
+./manage.sh backup
+
+# Manual backup
+docker exec internet-speed-logger tar -czf /tmp/backup.tar.gz /app/data
+docker cp internet-speed-logger:/tmp/backup.tar.gz ./backup_$(date +%Y%m%d).tar.gz
+
+# Restore backup
+tar -xzf backup_20251103.tar.gz
+docker-compose down
+cp -r backup_data/* ./data/
+docker-compose up -d
 ```
 
 ## ⚠️ Important: Rate Limiting & Blocking Prevention
@@ -364,372 +502,255 @@ Daily tests: ~24.0
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### Common Docker Issues
 
-#### Services Won't Start
+#### Container Won't Start
 ```bash
-# Check if speedtest-cli is installed
-which speedtest-cli
+# Check container logs
+docker-compose logs internet-speed-logger
 
-# Check service logs
-sudo journalctl -u internet-speed-logger.service --since "1 hour ago"
-
-# Verify file permissions
-ls -la /home/user01/Desktop/internet_speed_logger/
-```
-
-#### Web Interface Not Accessible
-```bash
-# Check if service is running
-sudo systemctl status internet-speed-web.service
-
-# Check if port 5000 is in use
+# Check if ports are available
 sudo netstat -tlnp | grep :5000
 
-# Check firewall settings
-sudo ufw status
+# Verify Docker installation
+docker --version
+docker-compose --version
 ```
 
-#### Configuration Issues
+#### Data Permission Issues
 ```bash
-# Validate JSON configuration
-python3 -m json.tool config.json
+# Fix data directory permissions
+sudo chown -R 1000:1000 ./data ./logs
 
-# Reset to defaults
-cp config.json.template config.json
+# Or set proper ownership
+sudo chown -R $(id -u):$(id -g) ./data ./logs
+```
+
+#### Configuration Problems
+```bash
+# Check health endpoint
+curl http://localhost:5000/health
+
+# Validate configuration
+docker exec internet-speed-logger cat /app/data/config.json
+
+# Reset configuration
+docker-compose down
+rm -rf ./data/config.json
+docker-compose up -d
+```
+
+#### Network Issues
+```bash
+# Test speedtest connectivity
+docker exec internet-speed-logger speedtest --version
+
+# Check DNS resolution
+docker exec internet-speed-logger nslookup speedtest.net
+
+# Test manual speedtest
+docker exec internet-speed-logger speedtest
 ```
 
 #### Rate Limiting & HTTP 403 Errors
 
 **Symptoms**: Dashboard shows "Failed: HTTP Error 403 - Speedtest server blocked request"
 
-**Immediate Solutions**:
+**Immediate Docker Solutions**:
 ```bash
-# 1. Check recent attempts on dashboard
-curl http://localhost:5000/api/recent-attempts | python3 -m json.tool
+# 1. Check application health
+curl http://localhost:5000/health
 
-# 2. Restart service to clear temporary blocks
-sudo systemctl restart internet-speed-logger.service
+# 2. View recent test attempts
+curl http://localhost:5000/api/recent-attempts
 
-# 3. Increase test interval to reduce frequency
-sudo systemctl stop internet-speed-logger.service
-# Edit service_runner.sh to change: python3 simple_speed_logger.py 2.0
-sudo systemctl start internet-speed-logger.service
+# 3. Restart container to clear temporary blocks
+docker-compose restart
 
-# 4. Check service logs for pattern
-sudo journalctl -u internet-speed-logger.service --since "6 hours ago" | grep -E "(403|Forbidden|Failed)"
+# 4. Increase test interval via environment variables
+echo "TEST_INTERVAL_HOURS=2.0" >> .env
+docker-compose up -d
+
+# 5. Check container logs for patterns
+docker-compose logs internet-speed-logger | grep -E "(403|Forbidden|Failed)"
 ```
 
 **Long-term Prevention**:
 ```bash
-# Monitor blocking status
-python3 speedtest_config.py  # Show recommendations
+# Use conservative settings in docker-compose.override.yml
+cat > docker-compose.override.yml << EOF
+version: '3.8'
+services:
+  internet-speed-logger:
+    environment:
+      - TEST_INTERVAL_HOURS=2.0  # Every 2 hours (safer)
+      - MANUAL_COOLDOWN_MINUTES=30
+EOF
 
-# Use conservative settings
-echo "Changing to 2-hour intervals for stability..."
-sudo systemctl stop internet-speed-logger.service
-sed -i 's/python3 simple_speed_logger.py .*/python3 simple_speed_logger.py 2.0/' service_runner.sh
-sudo systemctl start internet-speed-logger.service
-
-# Verify new settings
-sudo journalctl -u internet-speed-logger.service -f
+docker-compose up -d
 ```
 
 **Dashboard Monitoring**:
-- Check "Recent Test Attempts" section for failure patterns
-- Look for repeated 403 errors indicating blocking
-- Monitor "Service Status" badge (should show "Service Running")
-- Watch for retry attempts and their success/failure
-
-#### Permission Errors
-```bash
-# Fix file permissions
-chmod +x *.sh
-chmod 644 *.py *.json *.md
-
-# Fix systemd service files
-sudo chmod 644 /etc/systemd/system/internet-speed-*.service
-sudo systemctl daemon-reload
-```
+- Check "Recent Test Attempts" section at http://localhost:5000
+- Monitor health status at http://localhost:5000/health
+- Watch container logs: `docker-compose logs -f`
 
 ## 📝 Development
 
-### Git Workflow
+### Docker Development Workflow
 ```bash
 # Clone and setup
-git clone <repo-url>
-cd internet_speed_logger
+git clone https://github.com/DJA-prog/Internet-Speed-Logger-Dashboard-For-Pi.git
+cd Internet-Speed-Logger-Dashboard-For-Pi
 
-# Setup configuration
-cp config.json.template config.json
-# Edit config.json with your settings
+# Create development override
+cat > docker-compose.dev.yml << EOF
+version: '3.8'
+services:
+  internet-speed-logger:
+    build: .
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=true
+    volumes:
+      - ./app:/app:ro  # Mount source for live reload
+EOF
 
-# Install dependencies
-./setup_web.sh
-
-# Start development
-python3 web_interface.py
+# Start development environment
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
-
-### Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
 
 ### Project Structure
 ```
-internet_speed_logger/
-├── .gitignore                 # Git ignore rules
-├── README.md                  # This documentation
-├── config.json.template       # Configuration template
-├── sample_data.csv           # Sample data format
-├── simple_speed_logger.py    # Core testing logic
-├── web_interface.py          # Flask web application
-├── templates/                # HTML templates
-│   ├── dashboard.html
-│   ├── admin_login.html
-│   └── admin_dashboard.html
-├── setup_web.sh             # Web setup script
-├── manage_all_services.sh    # Service management
-└── update_interval.sh        # Dynamic configuration updates
-```
-```bash
-# With virtual environment
-./run.sh
-
-# Or manually
-source venv/bin/activate
-python internet_speed_logger.py
+internet_speed_logger_docker/
+├── Dockerfile                    # Docker container definition
+├── docker-compose.yml           # Docker orchestration
+├── docker-entrypoint.sh         # Container startup script
+├── manage.sh                     # Management utilities
+├── nginx.conf                    # Reverse proxy configuration
+├── .dockerignore                # Docker build exclusions
+├── DOCKER_README.md             # Docker-specific documentation
+├── README.md                    # This documentation
+└── app/                         # Application code
+    ├── internet_speed_logger.py  # Core testing logic
+    ├── web_interface.py          # Flask web application
+    ├── requirements.txt          # Python dependencies
+    ├── web_requirements.txt      # Web dependencies
+    ├── config.json.template      # Configuration template
+    └── templates/               # HTML templates
+        ├── dashboard.html
+        ├── admin_login.html
+        └── admin_dashboard.html
 ```
 
-Run speed tests every 30 minutes:
-```bash
-./run.sh --interval 0.5
-```
+### Contributing to Docker Version
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/docker-enhancement`
+3. Make your changes to Docker configuration or application code
+4. Test with: `docker-compose build && docker-compose up`
+5. Submit a pull request
 
-Run speed tests every 2 hours:
-```bash
-./run.sh --interval 2
-```
+### Legacy Installation (Non-Docker)
 
-#### Single Test
-
-Run a single speed test:
-```bash
-./run.sh --single
-```
-
-### Using the Simple Version
-
-The simple version (`simple_speed_logger.py`) uses the command-line speedtest-cli tool and doesn't require additional Python packages:
+For traditional installation without Docker, see the [Legacy Installation Guide](LEGACY_INSTALL.md) or use the original scripts in the `app/` directory:
 
 ```bash
-# Run every hour
-python3 simple_speed_logger.py
-
-# Run every 30 minutes
-python3 simple_speed_logger.py 0.5
-
-# Run every 2 hours
-python3 simple_speed_logger.py 2
+# Traditional systemd service installation
+cd app/
+./setup_web.sh
+./manage_all_services.sh
 ```
+## 📋 Quick Reference: Docker Commands
 
-### Custom Output File
-
-Specify a custom CSV filename:
+### Deployment Commands
 ```bash
-python internet_speed_logger.py --output my_speed_log.csv
+# Quick deployment
+./manage.sh deploy
+
+# Manual deployment  
+docker-compose up -d
+
+# Production with Nginx
+docker-compose --profile production up -d
 ```
 
-### Command Line Options
-
-- `--interval HOURS`: Hours between speed tests (default: 1, can be decimal like 0.5)
-- `--single`: Run a single test instead of continuous testing
-- `--output FILENAME`: Output CSV filename (default: internet_speed_log.csv)
-
-## Output Format
-
-The CSV file contains the following columns:
-
-- `timestamp`: Date and time of the test
-- `download_speed_mbps`: Download speed in Mbps
-- `upload_speed_mbps`: Upload speed in Mbps
-- `ping_ms`: Ping latency in milliseconds
-- `server_name`: Name of the speedtest server used
-- `server_country`: Country of the speedtest server
-- `isp`: Internet Service Provider
-
-## Example Output
-
-```csv
-timestamp,download_speed_mbps,upload_speed_mbps,ping_ms,server_name,server_country,isp
-2025-10-30 14:00:01,85.42,12.34,15.67,Speedtest Server,United States,Comcast
-2025-10-30 15:00:02,87.21,11.98,16.23,Speedtest Server,United States,Comcast
-```
-
-## Logging
-
-The script creates a log file (`speed_test.log`) that contains detailed information about:
-- Test start/completion times
-- Errors and exceptions
-- Status messages
-
-## Running as System Service
-
-### Quick Setup (Recommended)
+### Management Commands
 ```bash
-# Run the automated installer
-./install_service.sh
+# View logs
+docker-compose logs -f
+
+# Check status
+./manage.sh status
+
+# Restart services
+docker-compose restart
+
+# Stop services
+docker-compose down
+
+# Update application
+./manage.sh update
 ```
 
-### Manual Setup
+### Troubleshooting Commands
 ```bash
-# Copy service file
-sudo cp internet-speed-logger.service /etc/systemd/system/
+# Check application health
+curl http://localhost:5000/health
 
-# Reload systemd and enable service
-sudo systemctl daemon-reload
-sudo systemctl enable internet-speed-logger.service
-sudo systemctl start internet-speed-logger.service
+# Enter container for debugging
+docker exec -it internet-speed-logger bash
+
+# View container stats
+docker stats internet-speed-logger
+
+# Check recent test attempts
+curl http://localhost:5000/api/recent-attempts
 ```
-
-### Service Management
-```bash
-# Interactive management tool
-./service_manager.sh
-
-# Command line management
-./service_manager.sh status     # Check service status
-./service_manager.sh start      # Start service
-./service_manager.sh stop       # Stop service
-./service_manager.sh restart    # Restart service
-./service_manager.sh logs       # View recent logs
-./service_manager.sh results    # Show CSV results
-
-# Direct systemctl commands
-sudo systemctl status internet-speed-logger
-sudo systemctl start internet-speed-logger
-sudo systemctl stop internet-speed-logger
-sudo journalctl -u internet-speed-logger -f
-```
-
-## Running in Background
-
-### Option 1: Systemd Service (Recommended)
-The systemd service automatically:
-- Starts on system boot
-- Restarts if it crashes
-- Logs to system journal
-- Runs with proper user permissions
-
-### Option 2: Screen Session
-To run the script continuously in a screen session:
-
-```bash
-nohup python internet_speed_logger.py > /dev/null 2>&1 &
-```
-
-To stop the background process:
-```bash
-pkill -f internet_speed_logger.py
-```
-
-## Systemd Service (Linux)
-
-For automatic startup on system boot, create a systemd service:
-
-1. Create service file `/etc/systemd/system/internet-speed-logger.service`:
-```ini
-[Unit]
-Description=Internet Speed Logger
-After=network.target
-
-[Service]
-Type=simple
-User=your_username
-WorkingDirectory=/path/to/internet_speed_logger
-ExecStart=/usr/bin/python3 /path/to/internet_speed_logger/internet_speed_logger.py
-Restart=always
-RestartSec=60
-
-[Install]
-WantedBy=multi-user.target
-```
-
-2. Enable and start the service:
-```bash
-sudo systemctl enable internet-speed-logger.service
-sudo systemctl start internet-speed-logger.service
-```
-
-## Files Overview
-
-### Core Files
-- `internet_speed_logger.py` - Full-featured Python logger with extensive options
-- `simple_speed_logger.py` - Simplified version using command-line speedtest-cli
-- `requirements.txt` - Python dependencies
-- `README.md` - This documentation
-
-### Screen Session Scripts
-- `setup.sh` - Sets up virtual environment and dependencies
-- `run.sh` - Runs full-featured logger in virtual environment  
-- `run_in_screen.sh` - Runs full-featured logger in screen session
-- `run_simple_in_screen.sh` - Runs simple logger in screen session
-- `manage_sessions.sh` - Interactive screen session manager
-
-### Systemd Service Files
-- `internet-speed-logger.service` - Systemd service definition
-- `service_runner.sh` - Script executed by systemd service
-- `service_manager.sh` - Interactive systemd service manager
-- `install_service.sh` - Automated service installer
-
-## Requirements
-
-- Python 3.6+
-- speedtest-cli library
-- Internet connection
-
-## Notes
-
-- The first run may take longer as speedtest-cli needs to download server list
-- Speed tests typically take 30-60 seconds to complete
-- The script automatically selects the best server based on ping
-- Results are appended to the CSV file, so historical data is preserved
-- If errors occur during testing, they are logged and the script continues
-
-## 📋 Quick Reference: Blocking Prevention
 
 ### Safe Testing Intervals
 ```bash
 # Ultra-safe (recommended for production)
-python3 simple_speed_logger.py 2.0    # Every 2 hours (12 tests/day)
+TEST_INTERVAL_HOURS=2.0    # Every 2 hours (12 tests/day)
 
 # Balanced (default recommended)  
-python3 simple_speed_logger.py 1.0    # Every 1 hour (24 tests/day)
+TEST_INTERVAL_HOURS=1.0    # Every 1 hour (24 tests/day)
 
-# Current default (monitor for 403 errors)
-python3 simple_speed_logger.py 0.5    # Every 30 minutes (48 tests/day)
+# Frequent (monitor for 403 errors)
+TEST_INTERVAL_HOURS=0.5    # Every 30 minutes (48 tests/day)
 ```
 
-### Emergency Commands
+### Rate Limit Recovery
 ```bash
 # Check if blocked
 curl -s http://localhost:5000/api/recent-attempts | grep -i "403\|failed"
 
-# Restart services after blocking
-sudo systemctl restart internet-speed-logger.service
+# Restart after blocking
+docker-compose restart
 
-# View real-time logs  
-sudo journalctl -u internet-speed-logger.service -f
-
-# Check dashboard for blocking status
-# Navigate to: http://localhost:5000 → "Recent Test Attempts" section
+# Increase test interval
+echo "TEST_INTERVAL_HOURS=2.0" >> .env && docker-compose up -d
 ```
 
-### Rate Limit Indicators
-- ❌ **HTTP 403 Forbidden** = Rate limited/blocked
-- ❌ **Cannot retrieve speedtest configuration** = Server overloaded
-- ✅ **Speed test completed** = Working normally
-- 🔄 **Retry attempts** = Automatic recovery in progress
+---
+
+## 🆘 Support
+
+### Docker-Specific Issues
+1. Check the [Docker README](DOCKER_README.md) for detailed Docker documentation
+2. Review container logs: `docker-compose logs`
+3. Test health endpoint: `curl http://localhost:5000/health`
+4. Verify speedtest connectivity: `docker exec internet-speed-logger speedtest`
+
+### General Application Issues
+1. Check the dashboard's "Recent Test Attempts" section
+2. Monitor for HTTP 403 errors indicating rate limiting
+3. Verify configuration in the admin panel
+4. Review the rate limiting section above
+
+### Resources
+- **Web Interface**: http://localhost:5000
+- **Admin Panel**: http://localhost:5000/admin  
+- **Health Check**: http://localhost:5000/health
+- **Documentation**: [DOCKER_README.md](DOCKER_README.md)
+
+Happy speed testing with Docker! 🐳🚀
