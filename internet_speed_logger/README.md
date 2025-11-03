@@ -1,0 +1,545 @@
+# Internet Speed Logger with Web Dashboard
+
+A comprehensive Python application that automatically performs internet speed tests at regular intervals, logs results to CSV, and provides a beautiful web interface for viewing data with interactive charts.
+
+## ✨ Features
+
+### Core Functionality
+- **Automated Testing**: Performs download, upload, and ping tests using speedtest.net
+- **Flexible Scheduling**: Configurable test intervals (minutes to hours)
+- **Manual Testing**: Run tests on-demand with cooldown protection
+- **Data Persistence**: Stores results in CSV format for easy analysis
+
+### Web Interface
+- **Modern Dashboard**: Responsive Bootstrap 5 interface with Chart.js visualizations
+- **Interactive Charts**: Combined speed/ping charts with dual y-axis
+- **Package Performance**: Track ISP package compliance with success rates
+- **Real-time Updates**: Auto-refreshing dashboard every 30 seconds
+- **Time Filtering**: View data for 24h, 7d, 30d, or all time
+- **Data Export**: Download CSV data with filtering options
+
+### System Integration
+- **Systemd Services**: Runs as background services with auto-start on boot
+- **Admin Panel**: Web-based configuration management
+- **Session Management**: Persistent admin authentication
+- **Service Management**: Automatic restart on configuration changes
+
+### Performance Analytics
+- **Dynamic Distribution**: Speed distribution charts based on your subscription package
+- **Success Rate Tracking**: Monitor performance against ISP targets
+- **Historical Analysis**: Long-term trend analysis and statistics
+
+## 🚀 Quick Start
+
+### Prerequisites
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install speedtest-cli python3-flask python3-pandas python3-pip git
+
+# Fedora/RHEL
+sudo dnf install speedtest-cli python3-flask python3-pandas python3-pip git
+```
+
+### Installation
+
+#### Option 1: Git Clone (Recommended)
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd internet_speed_logger
+
+# Copy configuration template
+cp config.json.template config.json
+
+# Edit configuration (see Configuration section below)
+nano config.json
+
+# Run setup
+./setup_web.sh
+
+# Start services
+./manage_all_services.sh
+```
+
+#### Option 2: Complete Setup Script
+```bash
+# Install and start everything
+./setup_web.sh
+
+# Manage all services
+./manage_all_services.sh
+```
+
+## ⚙️ Configuration
+
+### Initial Setup
+1. Copy `config.json.template` to `config.json`
+2. Update the configuration:
+
+```json
+{
+  "admin": {
+    "username": "admin",
+    "password_hash": "YOUR_SECURE_PASSWORD_HASH"
+  },
+  "subscription_package": {
+    "name": "Your ISP Package Name",
+    "download": 100.0,
+    "upload": 10.0
+  },
+  "test_settings": {
+    "interval_hours": 1.0,
+    "manual_cooldown_minutes": 15,
+    "last_updated": null
+  }
+}
+```
+
+### Password Setup
+Generate a secure password hash:
+```bash
+python3 -c "
+import hashlib
+password = input('Enter admin password: ')
+print('Password hash:', hashlib.sha256(password.encode()).hexdigest())
+"
+```
+
+### Git Safety
+This project includes a comprehensive `.gitignore` that excludes:
+- ✅ **Data files**: `*.csv`, `*.log` (your speed test results)
+- ✅ **Configuration**: `config.json` (contains passwords and settings)
+- ✅ **System files**: `*.service` (environment-specific)
+- ✅ **Virtual environments**: `venv/`, `env/`
+- ✅ **Python cache**: `__pycache__/`, `*.pyc`
+- ✅ **IDE files**: `.vscode/`, `.idea/`
+
+#### Safe Files for Git
+- ✅ Source code (`.py` files)
+- ✅ Templates (`*.html`)
+- ✅ Configuration templates (`*.template`)
+- ✅ Documentation (`README.md`)
+- ✅ Setup scripts (`*.sh`)
+- ✅ Requirements files
+- ✅ Sample data (`sample_data.csv`)
+
+## 🌐 Web Dashboard
+
+### Access Points
+- **Local**: http://localhost:5000
+- **Network**: http://YOUR_IP_ADDRESS:5000
+
+### Dashboard Features
+- **Interactive Charts**: 
+  - Combined speed/ping visualization with dual y-axis
+  - Dynamic distribution based on your subscription package
+  - Time-filtered views (24h, 7d, 30d, all time)
+- **Performance Analytics**:
+  - Package compliance tracking
+  - Success rate percentages
+  - Statistical summaries (avg, min, max)
+- **Manual Testing**: 
+  - On-demand speed tests with cooldown protection
+  - Real-time test status updates
+- **Data Management**:
+  - CSV export with filtering
+  - Responsive design for all devices
+
+### Admin Panel
+Access the admin panel at: http://localhost:5000/admin
+
+#### Admin Features
+- **Dashboard Overview**: 
+  - Service status monitoring
+  - Recent test statistics
+  - System health indicators
+- **Subscription Package Management**: 
+  - Configure ISP package speeds for performance tracking
+  - Single package model for focused analysis
+  - Success rate calculations against targets
+- **Test Settings**: 
+  - Configurable test intervals (0.1 to 24 hours)
+  - Manual test cooldown settings (1-1440 minutes)
+  - Automatic service restart on configuration changes
+- **Security Management**: 
+  - Secure password changes
+  - 24-hour persistent sessions
+  - SHA256 password hashing
+- **Performance Analytics**: 
+  - Package compliance tracking
+  - Historical performance trends
+
+#### First-Time Admin Setup
+1. Access: http://localhost:5000/admin
+2. Login with default credentials (see configuration)
+3. **Important**: Change the default password immediately
+4. Configure your ISP package details
+5. Set desired test intervals
+
+## 📊 Data Analysis
+
+### CSV Format
+The application generates CSV files with the following structure:
+```csv
+timestamp,download_speed_mbps,upload_speed_mbps,ping_ms
+2025-11-03 10:00:00,95.2,8.5,15.3
+2025-11-03 11:00:00,102.1,9.8,12.7
+```
+
+### Performance Metrics
+- **Package Compliance**: Tracks success rates against ISP targets
+- **Distribution Analysis**: Speed distribution relative to subscription package
+- **Historical Trends**: Long-term performance analysis
+- **Statistical Summaries**: Average, minimum, maximum values
+
+## 🛠️ Advanced Usage
+
+### Service Management
+```bash
+# Check service status
+sudo systemctl status internet-speed-logger.service
+sudo systemctl status internet-speed-web.service
+
+# Start/stop services
+sudo systemctl start internet-speed-logger.service
+sudo systemctl stop internet-speed-web.service
+
+# View logs
+sudo journalctl -u internet-speed-logger.service -f
+sudo journalctl -u internet-speed-web.service -f
+
+# Restart all services
+./manage_all_services.sh restart
+```
+
+### Manual Testing
+```bash
+# Run a single test
+python3 simple_speed_logger.py
+
+# Run with custom interval (in hours)
+python3 simple_speed_logger.py 0.5  # Every 30 minutes
+```
+
+### Development Mode
+```bash
+# Run web interface in development mode
+python3 web_interface.py
+```
+
+## 🔧 Customization
+
+### Adding New Features
+The modular design allows easy customization:
+- **`simple_speed_logger.py`**: Core testing logic
+- **`web_interface.py`**: Flask web application
+- **`templates/`**: HTML templates for web interface
+- **Configuration**: JSON-based settings management
+
+### Custom Intervals
+Configure any interval from 6 minutes to 24 hours:
+```json
+{
+  "test_settings": {
+    "interval_hours": 0.1,  // 6 minutes
+    "interval_hours": 2.5,  // 2.5 hours
+    "interval_hours": 24    // Daily
+  }
+}
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Services Won't Start
+```bash
+# Check if speedtest-cli is installed
+which speedtest-cli
+
+# Check service logs
+sudo journalctl -u internet-speed-logger.service --since "1 hour ago"
+
+# Verify file permissions
+ls -la /home/user01/Desktop/internet_speed_logger/
+```
+
+#### Web Interface Not Accessible
+```bash
+# Check if service is running
+sudo systemctl status internet-speed-web.service
+
+# Check if port 5000 is in use
+sudo netstat -tlnp | grep :5000
+
+# Check firewall settings
+sudo ufw status
+```
+
+#### Configuration Issues
+```bash
+# Validate JSON configuration
+python3 -m json.tool config.json
+
+# Reset to defaults
+cp config.json.template config.json
+```
+
+#### Permission Errors
+```bash
+# Fix file permissions
+chmod +x *.sh
+chmod 644 *.py *.json *.md
+
+# Fix systemd service files
+sudo chmod 644 /etc/systemd/system/internet-speed-*.service
+sudo systemctl daemon-reload
+```
+
+## 📝 Development
+
+### Git Workflow
+```bash
+# Clone and setup
+git clone <repo-url>
+cd internet_speed_logger
+
+# Setup configuration
+cp config.json.template config.json
+# Edit config.json with your settings
+
+# Install dependencies
+./setup_web.sh
+
+# Start development
+python3 web_interface.py
+```
+
+### Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+### Project Structure
+```
+internet_speed_logger/
+├── .gitignore                 # Git ignore rules
+├── README.md                  # This documentation
+├── config.json.template       # Configuration template
+├── sample_data.csv           # Sample data format
+├── simple_speed_logger.py    # Core testing logic
+├── web_interface.py          # Flask web application
+├── templates/                # HTML templates
+│   ├── dashboard.html
+│   ├── admin_login.html
+│   └── admin_dashboard.html
+├── setup_web.sh             # Web setup script
+├── manage_all_services.sh    # Service management
+└── update_interval.sh        # Dynamic configuration updates
+```
+```bash
+# With virtual environment
+./run.sh
+
+# Or manually
+source venv/bin/activate
+python internet_speed_logger.py
+```
+
+Run speed tests every 30 minutes:
+```bash
+./run.sh --interval 0.5
+```
+
+Run speed tests every 2 hours:
+```bash
+./run.sh --interval 2
+```
+
+#### Single Test
+
+Run a single speed test:
+```bash
+./run.sh --single
+```
+
+### Using the Simple Version
+
+The simple version (`simple_speed_logger.py`) uses the command-line speedtest-cli tool and doesn't require additional Python packages:
+
+```bash
+# Run every hour
+python3 simple_speed_logger.py
+
+# Run every 30 minutes
+python3 simple_speed_logger.py 0.5
+
+# Run every 2 hours
+python3 simple_speed_logger.py 2
+```
+
+### Custom Output File
+
+Specify a custom CSV filename:
+```bash
+python internet_speed_logger.py --output my_speed_log.csv
+```
+
+### Command Line Options
+
+- `--interval HOURS`: Hours between speed tests (default: 1, can be decimal like 0.5)
+- `--single`: Run a single test instead of continuous testing
+- `--output FILENAME`: Output CSV filename (default: internet_speed_log.csv)
+
+## Output Format
+
+The CSV file contains the following columns:
+
+- `timestamp`: Date and time of the test
+- `download_speed_mbps`: Download speed in Mbps
+- `upload_speed_mbps`: Upload speed in Mbps
+- `ping_ms`: Ping latency in milliseconds
+- `server_name`: Name of the speedtest server used
+- `server_country`: Country of the speedtest server
+- `isp`: Internet Service Provider
+
+## Example Output
+
+```csv
+timestamp,download_speed_mbps,upload_speed_mbps,ping_ms,server_name,server_country,isp
+2025-10-30 14:00:01,85.42,12.34,15.67,Speedtest Server,United States,Comcast
+2025-10-30 15:00:02,87.21,11.98,16.23,Speedtest Server,United States,Comcast
+```
+
+## Logging
+
+The script creates a log file (`speed_test.log`) that contains detailed information about:
+- Test start/completion times
+- Errors and exceptions
+- Status messages
+
+## Running as System Service
+
+### Quick Setup (Recommended)
+```bash
+# Run the automated installer
+./install_service.sh
+```
+
+### Manual Setup
+```bash
+# Copy service file
+sudo cp internet-speed-logger.service /etc/systemd/system/
+
+# Reload systemd and enable service
+sudo systemctl daemon-reload
+sudo systemctl enable internet-speed-logger.service
+sudo systemctl start internet-speed-logger.service
+```
+
+### Service Management
+```bash
+# Interactive management tool
+./service_manager.sh
+
+# Command line management
+./service_manager.sh status     # Check service status
+./service_manager.sh start      # Start service
+./service_manager.sh stop       # Stop service
+./service_manager.sh restart    # Restart service
+./service_manager.sh logs       # View recent logs
+./service_manager.sh results    # Show CSV results
+
+# Direct systemctl commands
+sudo systemctl status internet-speed-logger
+sudo systemctl start internet-speed-logger
+sudo systemctl stop internet-speed-logger
+sudo journalctl -u internet-speed-logger -f
+```
+
+## Running in Background
+
+### Option 1: Systemd Service (Recommended)
+The systemd service automatically:
+- Starts on system boot
+- Restarts if it crashes
+- Logs to system journal
+- Runs with proper user permissions
+
+### Option 2: Screen Session
+To run the script continuously in a screen session:
+
+```bash
+nohup python internet_speed_logger.py > /dev/null 2>&1 &
+```
+
+To stop the background process:
+```bash
+pkill -f internet_speed_logger.py
+```
+
+## Systemd Service (Linux)
+
+For automatic startup on system boot, create a systemd service:
+
+1. Create service file `/etc/systemd/system/internet-speed-logger.service`:
+```ini
+[Unit]
+Description=Internet Speed Logger
+After=network.target
+
+[Service]
+Type=simple
+User=your_username
+WorkingDirectory=/path/to/internet_speed_logger
+ExecStart=/usr/bin/python3 /path/to/internet_speed_logger/internet_speed_logger.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+2. Enable and start the service:
+```bash
+sudo systemctl enable internet-speed-logger.service
+sudo systemctl start internet-speed-logger.service
+```
+
+## Files Overview
+
+### Core Files
+- `internet_speed_logger.py` - Full-featured Python logger with extensive options
+- `simple_speed_logger.py` - Simplified version using command-line speedtest-cli
+- `requirements.txt` - Python dependencies
+- `README.md` - This documentation
+
+### Screen Session Scripts
+- `setup.sh` - Sets up virtual environment and dependencies
+- `run.sh` - Runs full-featured logger in virtual environment  
+- `run_in_screen.sh` - Runs full-featured logger in screen session
+- `run_simple_in_screen.sh` - Runs simple logger in screen session
+- `manage_sessions.sh` - Interactive screen session manager
+
+### Systemd Service Files
+- `internet-speed-logger.service` - Systemd service definition
+- `service_runner.sh` - Script executed by systemd service
+- `service_manager.sh` - Interactive systemd service manager
+- `install_service.sh` - Automated service installer
+
+## Requirements
+
+- Python 3.6+
+- speedtest-cli library
+- Internet connection
+
+## Notes
+
+- The first run may take longer as speedtest-cli needs to download server list
+- Speed tests typically take 30-60 seconds to complete
+- The script automatically selects the best server based on ping
+- Results are appended to the CSV file, so historical data is preserved
+- If errors occur during testing, they are logged and the script continues
