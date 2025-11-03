@@ -279,37 +279,126 @@ def get_relative_time(dt):
     except:
         return "Unknown"
 
+def filter_hourly_readings(data, tolerance_minutes=25):
+    """
+    Filter readings to include only those that are approximately 60 minutes apart.
+    
+    Args:
+        data: List of speed test readings with timestamp field
+        tolerance_minutes: Allowed deviation from 60 minutes (default: 25 minutes to handle clock drift)
+    
+    Returns:
+        List of readings that form a consistent hourly sequence
+    """
+    if not data:
+        return []
+    
+    from datetime import datetime, timedelta
+    
+    # Convert tolerance to timedelta
+    tolerance = timedelta(minutes=tolerance_minutes)
+    target_interval = timedelta(hours=1)
+    
+    filtered_readings = []
+    
+    # Always include the first reading as our baseline
+    if data:
+        filtered_readings.append(data[0])
+        
+        if len(data) == 1:
+            return filtered_readings
+    
+    # Parse the first timestamp
+    try:
+        baseline_timestamp = datetime.strptime(data[0]['timestamp'], '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        # If parsing fails, return original data
+        return data
+    
+    # Check each subsequent reading against our baseline + N hours
+    for entry in data[1:]:
+        try:
+            current_timestamp = datetime.strptime(entry['timestamp'], '%Y-%m-%d %H:%M:%S')
+            
+            # Calculate how many hours this should be from the baseline
+            time_from_baseline = current_timestamp - baseline_timestamp
+            total_hours = time_from_baseline.total_seconds() / 3600
+            
+            # Check if this aligns with any hourly interval (1h, 2h, 3h, etc.)
+            closest_hour = round(total_hours)
+            
+            # Only consider if it's at least 1 hour from baseline
+            if closest_hour >= 1:
+                expected_timestamp = baseline_timestamp + timedelta(hours=closest_hour)
+                
+                # Check if current reading is within tolerance of expected hourly time
+                min_time = expected_timestamp - tolerance
+                max_time = expected_timestamp + tolerance
+                
+                if min_time <= current_timestamp <= max_time:
+                    # This reading aligns with an hourly interval
+                    filtered_readings.append(entry)
+            
+        except ValueError:
+            # Skip readings with invalid timestamps
+            continue
+    
+    return filtered_readings
+
 def get_statistics(data):
-    """Calculate statistics from speed data."""
+    """Calculate statistics from speed data using honest hourly averaging."""
     if not data:
         return {}
     
-    downloads = [entry['download_speed_mbps'] for entry in data]
-    uploads = [entry['upload_speed_mbps'] for entry in data]
-    pings = [entry['ping_ms'] for entry in data]
+    # Filter data to include only hourly readings for honest averaging
+    hourly_data = filter_hourly_readings(data)
+    
+    # Use all data for total count, but hourly data for averages
+    all_downloads = [entry['download_speed_mbps'] for entry in data]
+    all_uploads = [entry['upload_speed_mbps'] for entry in data]
+    all_pings = [entry['ping_ms'] for entry in data]
+    
+    # Use hourly data for honest averages
+    if hourly_data:
+        hourly_downloads = [entry['download_speed_mbps'] for entry in hourly_data]
+        hourly_uploads = [entry['upload_speed_mbps'] for entry in hourly_data]
+        hourly_pings = [entry['ping_ms'] for entry in hourly_data]
+    else:
+        # Fallback to all data if no hourly pattern found
+        hourly_downloads = all_downloads
+        hourly_uploads = all_uploads
+        hourly_pings = all_pings
     
     stats = {
         'total_tests': len(data),
+        'hourly_tests': len(hourly_data),
         'download': {
-            'avg': round(sum(downloads) / len(downloads), 2),
-            'min': round(min(downloads), 2),
-            'max': round(max(downloads), 2)
+            'avg': round(sum(hourly_downloads) / len(hourly_downloads), 2) if hourly_downloads else 0,
+            'min': round(min(all_downloads), 2),
+            'max': round(max(all_downloads), 2)
         },
         'upload': {
-            'avg': round(sum(uploads) / len(uploads), 2),
-            'min': round(min(uploads), 2),
-            'max': round(max(uploads), 2)
+            'avg': round(sum(hourly_uploads) / len(hourly_uploads), 2) if hourly_uploads else 0,
+            'min': round(min(all_uploads), 2),
+            'max': round(max(all_uploads), 2)
         },
         'ping': {
-            'avg': round(sum(pings) / len(pings), 2),
-            'min': round(min(pings), 2),
-            'max': round(max(pings), 2)
-        }
+            'avg': round(sum(hourly_pings) / len(hourly_pings), 2) if hourly_pings else 0,
+            'min': round(min(all_pings), 2),
+            'max': round(max(all_pings), 2)
+        },
+        # Additional info about filtering
+        'averaging_method': 'hourly_filtered' if len(hourly_data) < len(data) else 'all_data',
+        'excluded_readings': len(data) - len(hourly_data)
     }
     
     if data:
         stats['first_test'] = data[0]['timestamp']
         stats['last_test'] = data[-1]['timestamp']
+    
+    if hourly_data and len(hourly_data) > 1:
+        stats['first_hourly_test'] = hourly_data[0]['timestamp']
+        stats['last_hourly_test'] = hourly_data[-1]['timestamp']
     
     return stats
 

@@ -17,17 +17,22 @@ A comprehensive Python application that automatically performs internet speed te
 - **Real-time Updates**: Auto-refreshing dashboard every 30 seconds
 - **Time Filtering**: View data for 24h, 7d, 30d, or all time
 - **Data Export**: Download CSV data with filtering options
+- **Recent Test Attempts**: Live monitoring of service health with error detection
+- **Honest Hourly Averaging**: Accurate averages using only properly spaced readings
 
 ### System Integration
 - **Systemd Services**: Runs as background services with auto-start on boot
 - **Admin Panel**: Web-based configuration management
 - **Session Management**: Persistent admin authentication
 - **Service Management**: Automatic restart on configuration changes
+- **Enhanced Error Handling**: Smart retry logic with progressive delays
+- **Rate Limiting Protection**: Automatic detection and recovery from speedtest blocking
 
 ### Performance Analytics
 - **Dynamic Distribution**: Speed distribution charts based on your subscription package
 - **Success Rate Tracking**: Monitor performance against ISP targets
 - **Historical Analysis**: Long-term trend analysis and statistics
+- **Service Health Monitoring**: Real-time visibility into test attempts and failures
 
 ## 🚀 Quick Start
 
@@ -70,6 +75,53 @@ nano config.json
 # Manage all services
 ./manage_all_services.sh
 ```
+
+## 🆕 Recent Improvements & Features
+
+### Honest Hourly Averaging (v2.1)
+The dashboard now calculates **honest averages** using only readings that are approximately 60 minutes apart:
+
+- ✅ **Filtered Averages**: Uses only hourly readings (±25min tolerance) for accurate long-term averages
+- ✅ **Excludes Irregularities**: Filters out manual tests, service restarts, and different interval periods
+- ✅ **Transparent Reporting**: Shows how many readings were used vs excluded
+- ✅ **Complete Data**: Min/max values still use all readings for full range information
+
+**Dashboard Display**: "Hourly Avg Download/Upload/Ping" with detailed breakdown showing total vs hourly test counts.
+
+### Recent Test Attempts Monitoring (v2.1)
+Real-time visibility into service health and test attempts:
+
+- ✅ **Live Monitoring**: Shows last 5 test attempts with timestamps and status
+- ✅ **Error Detection**: Displays HTTP 403 errors, timeouts, and other failures
+- ✅ **Service Status**: Real-time service running/stopped indicator
+- ✅ **Retry Tracking**: Shows automatic retry attempts and backoff delays
+- ✅ **Auto-Refresh**: Updates every 30 seconds with latest attempt information
+
+**Location**: New "Recent Test Attempts" section on main dashboard.
+
+### Enhanced Rate Limiting Protection (v2.1)
+Advanced protection against speedtest server blocking:
+
+- ✅ **Smart Retry Logic**: Progressive delays (30s → 2m → 5m) on failures
+- ✅ **HTTP 403 Detection**: Automatic backoff when rate limited
+- ✅ **Optimized Commands**: Uses `--secure --single --timeout` for better reliability
+- ✅ **Adaptive Intervals**: Can automatically increase test intervals after repeated failures
+
+### Automatic Service Management (v2.1)
+Admin panel can now automatically restart services after configuration changes:
+
+- ✅ **Seamless Updates**: Change test intervals without manual service restart
+- ✅ **Sudo Integration**: Secure, limited permissions for service management
+- ✅ **Success Feedback**: Clear confirmation when services restart successfully
+- ✅ **Error Handling**: Informative messages if restart fails
+
+### Dashboard Improvements (v2.1)
+Enhanced user experience and reliability:
+
+- ✅ **Fixed Chart Loading**: Speed Distribution chart now loads properly on page refresh
+- ✅ **Enhanced Tooltips**: Informative tooltips explaining averaging methodology
+- ✅ **Better Error Messages**: Clear feedback for service issues and configuration problems
+- ✅ **Improved Data Flow**: Optimized loading sequence for faster dashboard updates
 
 ## ⚙️ Configuration
 
@@ -135,33 +187,42 @@ This project includes a comprehensive `.gitignore` that excludes:
   - Combined speed/ping visualization with dual y-axis
   - Dynamic distribution based on your subscription package
   - Time-filtered views (24h, 7d, 30d, all time)
+  - Fixed loading issues - charts now display immediately on page refresh
 - **Performance Analytics**:
-  - Package compliance tracking
-  - Success rate percentages
-  - Statistical summaries (avg, min, max)
+  - **Honest Hourly Averaging**: Averages calculated from properly spaced readings only
+  - Package compliance tracking with transparent methodology
+  - Success rate percentages against ISP targets
+  - Statistical summaries (avg, min, max) with clear data source indicators
+- **Service Health Monitoring**:
+  - **Recent Test Attempts**: Live view of last 5 test attempts with status
+  - Real-time service status (Running/Stopped) indicator
+  - Error detection and retry attempt tracking
+  - HTTP 403 rate limiting alerts and recovery status
 - **Manual Testing**: 
   - On-demand speed tests with cooldown protection
   - Real-time test status updates
 - **Data Management**:
   - CSV export with filtering
   - Responsive design for all devices
+  - Auto-refresh every 30 seconds
 
 ### Admin Panel
 Access the admin panel at: http://localhost:5000/admin
 
 #### Admin Features
 - **Dashboard Overview**: 
-  - Service status monitoring
-  - Recent test statistics
-  - System health indicators
+  - Service status monitoring with detailed health information
+  - Recent test statistics with honest averaging breakdown
+  - System health indicators and error reporting
 - **Subscription Package Management**: 
   - Configure ISP package speeds for performance tracking
   - Single package model for focused analysis
-  - Success rate calculations against targets
+  - Success rate calculations against targets with honest averaging
 - **Test Settings**: 
   - Configurable test intervals (0.1 to 24 hours)
+  - **Automatic Service Restart**: Changes apply immediately without manual restart
   - Manual test cooldown settings (1-1440 minutes)
-  - Automatic service restart on configuration changes
+  - Real-time feedback on configuration changes
 - **Security Management**: 
   - Secure password changes
   - 24-hour persistent sessions
