@@ -13,17 +13,13 @@ import logging
 from typing import Dict, Any
 
 class InternetSpeedLogger:
-    def __init__(self, csv_filename: str = None):
+    def __init__(self, csv_filename: str = "internet_speed_log.csv"):
         """
         Initialize the Internet Speed Logger.
         
         Args:
             csv_filename (str): Name of the CSV file to store results
         """
-        # Use environment variable for CSV file path if available
-        if csv_filename is None:
-            csv_filename = os.environ.get('CSV_FILE', 'internet_speed_log.csv')
-        
         self.csv_filename = csv_filename
         self.csv_headers = [
             "timestamp", 
@@ -36,17 +32,11 @@ class InternetSpeedLogger:
         ]
         
         # Set up logging
-        log_dir = os.environ.get('LOG_DIR', '.')
-        log_file = os.path.join(log_dir, 'speed_test.log')
-        
-        # Ensure log directory exists
-        os.makedirs(log_dir, exist_ok=True)
-        
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(log_file),
+                logging.FileHandler('speed_test.log'),
                 logging.StreamHandler()
             ]
         )
@@ -57,11 +47,6 @@ class InternetSpeedLogger:
     
     def _initialize_csv(self) -> None:
         """Initialize CSV file with headers if it doesn't exist."""
-        # Ensure CSV directory exists
-        csv_dir = os.path.dirname(self.csv_filename)
-        if csv_dir:
-            os.makedirs(csv_dir, exist_ok=True)
-        
         if not os.path.exists(self.csv_filename):
             with open(self.csv_filename, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)

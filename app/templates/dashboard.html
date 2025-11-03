@@ -107,7 +107,12 @@
                 <div class="card stat-card text-center h-100">
                     <div class="card-body">
                         <i class="fas fa-download stat-icon text-primary"></i>
-                        <h5 class="card-title">Average Download</h5>
+                        <h5 class="card-title">
+                            Hourly Avg Download
+                            <i class="fas fa-info-circle ms-1" 
+                               title="Average calculated from hourly readings only (±25min tolerance)" 
+                               style="font-size: 0.8em; color: #6c757d;"></i>
+                        </h5>
                         <h3 id="avgDownload" class="text-primary">--</h3>
                         <small class="text-muted">Mbps</small>
                     </div>
@@ -117,7 +122,12 @@
                 <div class="card stat-card text-center h-100">
                     <div class="card-body">
                         <i class="fas fa-upload stat-icon text-success"></i>
-                        <h5 class="card-title">Average Upload</h5>
+                        <h5 class="card-title">
+                            Hourly Avg Upload
+                            <i class="fas fa-info-circle ms-1" 
+                               title="Average calculated from hourly readings only (±25min tolerance)" 
+                               style="font-size: 0.8em; color: #6c757d;"></i>
+                        </h5>
                         <h3 id="avgUpload" class="text-success">--</h3>
                         <small class="text-muted">Mbps</small>
                     </div>
@@ -127,7 +137,12 @@
                 <div class="card stat-card text-center h-100">
                     <div class="card-body">
                         <i class="fas fa-stopwatch stat-icon text-warning"></i>
-                        <h5 class="card-title">Average Ping</h5>
+                        <h5 class="card-title">
+                            Hourly Avg Ping
+                            <i class="fas fa-info-circle ms-1" 
+                               title="Average calculated from hourly readings only (±25min tolerance)" 
+                               style="font-size: 0.8em; color: #6c757d;"></i>
+                        </h5>
                         <h3 id="avgPing" class="text-warning">--</h3>
                         <small class="text-muted">ms</small>
                     </div>
@@ -259,6 +274,23 @@
                             <div class="col-md-6">
                                 <p><strong>Data File:</strong> <span id="dataFile">internet_speed_log.csv</span></p>
                                 <p><strong>Auto Refresh:</strong> <span class="badge bg-success">Every 30 seconds</span></p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-info" style="margin-bottom: 0;">
+                                    <h6><i class="fas fa-calculator"></i> Honest Hourly Averaging</h6>
+                                    <p class="mb-2">
+                                        <strong>Total Tests:</strong> <span id="totalTestsInfo">--</span> | 
+                                        <strong>Hourly Tests Used:</strong> <span id="hourlyTestsInfo">--</span> | 
+                                        <strong>Excluded:</strong> <span id="excludedTestsInfo">--</span>
+                                    </p>
+                                    <small class="text-muted">
+                                        Averages calculated using only readings that are approximately 60 minutes apart (±25min tolerance). 
+                                        This excludes irregular readings from service restarts, manual tests, or different intervals, 
+                                        providing more accurate long-term performance averages.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -442,8 +474,9 @@
                 const attemptsResponse = await fetch('/api/recent-attempts');
                 const attemptsData = await attemptsResponse.json();
                 
-                updateCharts(chartData);
+                // Update stats first to set window.currentConfig before updating charts
                 updateStatsFromData(statsData);
+                updateCharts(chartData);
                 updateRecentAttempts(attemptsData);
                 updateLastUpdate();
                 
@@ -460,6 +493,11 @@
                 document.getElementById('totalTests').textContent = result.stats.total_tests || 0;
                 document.getElementById('firstTest').textContent = result.stats.first_test || '--';
                 document.getElementById('lastTest').textContent = result.stats.last_test || '--';
+                
+                // Update honest averaging info
+                document.getElementById('totalTestsInfo').textContent = result.stats.total_tests || '--';
+                document.getElementById('hourlyTestsInfo').textContent = result.stats.hourly_tests || '--';
+                document.getElementById('excludedTestsInfo').textContent = result.stats.excluded_readings || '--';
             }
             
             // Update package performance
@@ -467,8 +505,9 @@
                 updatePackagePerformance(result.package_performance);
             }
             
-            // Store config for distribution chart updates
+            // Store config for distribution chart updates - this is critical for the distribution chart
             window.currentConfig = result.config;
+            console.log('Config loaded for distribution chart:', window.currentConfig?.package?.download || 'No package config');
             
             // Update manual test button
             updateManualTestButton();
@@ -483,13 +522,27 @@
             speedChart.update();
             
             // Update distribution chart based on subscription package
+            console.log('Updating distribution chart with', data.download_speeds?.length || 0, 'speeds');
             updateDistributionChart(data.download_speeds);
         }
         
         function updateDistributionChart(downloadSpeeds) {
-            if (!window.currentConfig || !window.currentConfig.package) return;
+            if (!window.currentConfig || !window.currentConfig.package) {
+                console.warn('Distribution chart: Config not loaded yet, skipping update');
+                return;
+            }
+            
+            if (!downloadSpeeds || downloadSpeeds.length === 0) {
+                console.warn('Distribution chart: No download speeds data available');
+                return;
+            }
             
             const target = window.currentConfig.package.download;
+            if (!target || target <= 0) {
+                console.warn('Distribution chart: Invalid target speed in config');
+                return;
+            }
+            
             const aboveTarget = downloadSpeeds.filter(speed => speed >= target).length;
             const nearTarget = downloadSpeeds.filter(speed => speed >= target * 0.75 && speed < target).length;
             const belowTarget = downloadSpeeds.filter(speed => speed >= target * 0.5 && speed < target * 0.75).length;
