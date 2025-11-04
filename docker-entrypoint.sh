@@ -21,8 +21,13 @@ error() {
     echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
 }
 
-# Create necessary directories
+# Create necessary directories and fix permissions
 mkdir -p /app/data /app/logs
+
+# Fix ownership of mounted volumes if running as root
+if [ "$(id -u)" = "0" ]; then
+    chown -R appuser:appuser /app/data /app/logs
+fi
 
 # Initialize configuration if it doesn't exist
 if [ ! -f "/app/data/config.json" ]; then
@@ -30,7 +35,13 @@ if [ ! -f "/app/data/config.json" ]; then
     
     # Create config from template or default
     if [ -f "/app/config.json.template" ]; then
+        # Copy template and replace placeholder values
         cp /app/config.json.template /app/data/config.json
+        # Replace placeholder password hash with actual hash
+        DEFAULT_HASH=$(echo -n "${ADMIN_PASSWORD:-speedtest123}" | sha256sum | cut -d' ' -f1)
+        sed -i "s/CHANGE_THIS_PASSWORD_HASH/$DEFAULT_HASH/g" /app/data/config.json
+        # Replace placeholder username if specified
+        sed -i "s/\"username\": \"admin\"/\"username\": \"${ADMIN_USERNAME:-admin}\"/g" /app/data/config.json
     else
         cat > /app/data/config.json << EOF
 {
@@ -59,6 +70,12 @@ if [ ! -f "/app/data/internet_speed_log.csv" ]; then
     log "Initializing CSV log file..."
     echo "timestamp,download_speed_mbps,upload_speed_mbps,ping_ms,server_name,server_country,isp" > /app/data/internet_speed_log.csv
     log "CSV log file created at /app/data/internet_speed_log.csv"
+fi
+
+# Switch to appuser if currently running as root
+if [ "$(id -u)" = "0" ]; then
+    log "Switching to appuser..."
+    exec su appuser -c "exec $0 $*"
 fi
 
 # Function to run speed logger

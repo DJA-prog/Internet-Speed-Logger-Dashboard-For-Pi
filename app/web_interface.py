@@ -875,6 +875,14 @@ def download_filtered_csv():
         logger.error(f"Error creating filtered CSV: {e}")
         return f"Error creating file: {e}", 500
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for container monitoring."""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat()
+    }), 200
+
 @app.route('/api/status')
 def api_status():
     """API endpoint to get system status."""

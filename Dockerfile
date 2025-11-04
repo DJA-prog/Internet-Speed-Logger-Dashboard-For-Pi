@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
-    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Install speedtest-cli from Ookla (official)
@@ -41,9 +40,6 @@ RUN mkdir -p /app/data /app/logs /app/templates && \
 # Copy entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
-
-# Switch to non-root user
-USER appuser
 
 # Expose web interface port
 EXPOSE 5000
